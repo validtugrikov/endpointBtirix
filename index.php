@@ -22,7 +22,44 @@ require_once __DIR__ . '/autoload.php'; // Подключаем автозагр
 use Silex\Application;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\HttpFoundation\Response;
+// Подключение Bitrix ORM
 
+use Bitrix\Main\Loader;
+use Bitrix\Main\ORM\Fields;
+use Bitrix\Main\ORM\Fields\IntegerField;
+use Bitrix\Main\ORM\Fields\StringField;
+use Bitrix\Main\ORM\Fields\DatetimeField;
+
+use Bitrix\Main\Entity;
+use Bitrix\Main\Type;
+use Bitrix\Main\ORM\Data\DataManager;
+
+class UserTable extends DataManager
+{
+    public static function getTableName()
+    {
+        return 'b_user';
+    }
+
+    public static function getMap()
+    {
+        return [
+            new Entity\IntegerField('ID', [
+                'primary' => true,
+                'autocomplete' => true,
+            ]),
+            new Entity\StringField('LOGIN'),
+            new Entity\StringField('NAME'),
+            new Entity\StringField('LAST_NAME'),
+            new Entity\DatetimeField('TIMESTAMP_X', [
+                'default_value' => new Type\DateTime,
+            ]),
+        ];
+    }
+}
+
+
+Loader::includeModule('main');
 
 /**
  * @var string $DBHost
@@ -40,21 +77,17 @@ $app = new Application();
 $ext_func = function ($app, $request, $thisarParams) use ($user, $debug) {
 
     require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/php_interface/dbconn.php");
-    // Подключаемся к базе данных MySQL
-    /**
-     * @var string $DBHost
-     * @var string $DBLogin
-     * @var string $DBPassword
-     * @var string $DBName
-     * @var $lastPage
-     */
-    $mysqli = new mysqli($DBHost, $DBLogin, $DBPassword, $DBName);
+    $users = UserTable::getList([
+        'select' => ['ID', 'LOGIN', 'NAME', 'LAST_NAME'],
+        'filter' => ['ACTIVE' => 'Y'],
+        'limit' => 10,
+    ])->fetchAll();
+
 
 
     $arRes = [
-        'data' => [],
-        'count' => count([]),
-        'last_page' => $lastPage < 1 ? 1 : $lastPage
+        'data' => $users,
+        'count' => count($users)
     ];
 
     return $arRes;
