@@ -13,3 +13,7 @@ php composer.phar add silex
 ```
 php -S localhost:8000
 ```
+
+Либо подключив Bitrix ORM. Добавляйте проверку авторизации - по вкусу)
+
+В итоге, если скачаете в папку /local, у Вас должна открываться страница, [например, с подтверждение](https://sitename.net/local/endpointBtirix/echo)

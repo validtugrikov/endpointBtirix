@@ -20,19 +20,91 @@ require_once __DIR__ . '/autoload.php'; // Подключаем автозагр
 
 
 use Silex\Application;
+use Symfony\Component\HttpFoundation\Request;
+use Symfony\Component\HttpFoundation\Response;
+
+
+/**
+ * @var string $DBHost
+ * @var string $DBLogin
+ * @var string $DBPassword
+ * @var string $DBName
+ */
+$jsonText = file_get_contents('php://input');
+$thisarParams = $jsonText ? json_decode($jsonText, true) : null;
 
 $app = new Application();
 
-$app->get('/', function () {
-    global $USER;
+/** @var array $user */
+/** @var array $debug */
+$ext_func = function ($app, $request, $thisarParams) use ($user, $debug) {
 
-    // Используем функциональность Bitrix
-    if ($USER->IsAuthorized()) {
-        $userName = $USER->GetFullName();
-        return "Hello, $userName!";
-    } else {
-        return "Hello, guest!";
-    }
+    require($_SERVER["DOCUMENT_ROOT"] . "/bitrix/php_interface/dbconn.php");
+    // Подключаемся к базе данных MySQL
+    /**
+     * @var string $DBHost
+     * @var string $DBLogin
+     * @var string $DBPassword
+     * @var string $DBName
+     * @var $lastPage
+     */
+    $mysqli = new mysqli($DBHost, $DBLogin, $DBPassword, $DBName);
+
+
+    $arRes = [
+        'data' => [],
+        'count' => count([]),
+        'last_page' => $lastPage < 1 ? 1 : $lastPage
+    ];
+
+    return $arRes;
+
+
+};
+
+$app->GET('/', function (Application $app, Request $request) use ($ext_func) {
+
+    $_REQUEST = $_REQUEST ?? ['ok'];
+    $thisarParams = $_REQUEST;
+
+    $response = new Response();
+    $response->headers->set('Content-Type', 'application/json');
+    $response->headers->set('Access-Control-Allow-Origin', '*');
+    $response->headers->set('Access-Control-Allow-Credentials', true);
+    $arRes = $ext_func($app, $request, $thisarParams);
+    $response->setContent(json_encode($arRes, JSON_UNESCAPED_UNICODE));
+    return $response;
+});
+
+$app->POST('/', function (Application $app, Request $request) use ($ext_func) {
+
+    $_REQUEST = $_REQUEST ?? ['ok'];
+    $thisarParams = $_REQUEST;
+
+    $response = new Response();
+    $response->headers->set('Content-Type', 'application/json');
+    $response->headers->set('Access-Control-Allow-Origin', '*');
+    $response->headers->set('Access-Control-Allow-Credentials', true);
+    $arRes = $ext_func($app, $request, $thisarParams);
+    $response->setContent(json_encode($arRes, JSON_UNESCAPED_UNICODE));
+
+
+    return $response;
+});
+
+$app->GET('/echo', function (Application $app, Request $request) {
+
+
+    $response = new Response();
+    $response->headers->set('Content-Type', 'application/json');
+    $response->headers->set('Access-Control-Allow-Origin', '*');
+    $response->headers->set('Access-Control-Allow-Credentials', true);
+    $response->setContent(json_encode([
+        'status' => 'ok',
+    ]));
+
+
+    return $response;
 });
 
 $app->run();
